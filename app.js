@@ -34,8 +34,8 @@ db.connect((err) => {
     }
     console.log('Connected to MySQL');
     
-    // Create table
-    const createTable = `
+    // Create patients table
+    const createPatientsTable = `
         CREATE TABLE IF NOT EXISTS patients (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
@@ -45,10 +45,24 @@ db.connect((err) => {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     `;
-    
-    db.query(createTable, (err) => {
+    db.query(createPatientsTable, (err) => {
         if (err) console.error('Table creation error:', err);
-        else console.log('Table ready');
+        else console.log('Patients table ready');
+    });
+
+    // Create contact_messages table
+    const createContactTable = `
+        CREATE TABLE IF NOT EXISTS contact_messages (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `;
+    db.query(createContactTable, (err) => {
+        if (err) console.error('Contact table creation error:', err);
+        else console.log('Contact messages table ready');
     });
 });
 
@@ -105,6 +119,22 @@ const sendEmail = async (email, name) => {
 };
 
 // Routes
+
+// Contact form submission
+app.post('/api/contact', (req, res) => {
+    const { name, email, message } = req.body;
+    if (!name || !email || !message) {
+        return res.status(400).json({ error: 'Name, email, and message are required' });
+    }
+    const query = 'INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)';
+    db.query(query, [name, email, message], (err, result) => {
+        if (err) {
+            console.error('Contact DB error:', err);
+            return res.status(500).json({ error: 'Database error: ' + err.message });
+        }
+        res.status(201).json({ message: 'Message sent successfully!' });
+    });
+});
 
 // Test route (no file upload)
 app.post('/api/patients/test', async (req, res) => {
@@ -299,8 +329,19 @@ app.delete('/api/patients/:id', (req, res) => {
 });
 
 // Serve HTML page
+
+// Serve HTML pages for multi-page website
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+app.get('/about.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'about.html'));
+});
+app.get('/services.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'services.html'));
+});
+app.get('/contact.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'contact.html'));
 });
 
 app.listen(PORT, () => {
